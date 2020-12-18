@@ -38,6 +38,7 @@ class PostHandler(Resource):
         return {key: value}, 200
 
 
+# add handler to api
 api.add_resource(PostHandler, '/')
 api.add_resource(GetHandler, '/<string:key>')
 

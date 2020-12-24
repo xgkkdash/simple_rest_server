@@ -1,7 +1,8 @@
-from flask import Flask
-from flask_restful import Resource, Api, reqparse, abort
 import os
 import socket
+import redis
+from flask import Flask
+from flask_restful import Resource, Api, reqparse, abort
 
 from database.db import init_db
 from model.kvpair import KvPair
@@ -9,6 +10,9 @@ from model.kvpair import KvPair
 # create flask app
 app = Flask(__name__)
 api = Api(app)
+
+# redis cache
+cache = redis.Redis(host='0.0.0.0', port=6379)
 
 # TODO: set db_name and url here, later change it to docker_file
 db_name = "test_rest_server"
@@ -30,15 +34,24 @@ parser.add_argument('value')
 class GetDelHandler(Resource):
     def get(self, key):
         # if element exists in DB, return it with 200, else return 404 Not Found
-        result = db.get_kvpair(key=key)
-        if result:
-            result_k, result_v = result.key, result.value
-            return {'key': result_k, 'value': result_v}, 200
-        else:
-            return abort(404, message="element with Key {} doesn't exist".format(key))
-            # return 'Key Not Exist', 404
+        # first looking for element from cache, if not success, goto DB
+        cache_result = cache.get(key)
+        if cache_result:  # can find from cache, do not need DB operation
+            result_v = cache_result.decode("utf-8")  # redis use bytes to save, use decode to convert it to string
+            return {'key': key, 'value': result_v}, 200
+        else:  # cache didn't save this data, search from DB
+            result = db.get_kvpair(key=key)
+            if result:
+                result_k, result_v = result.key, result.value
+                cache.set(result_k, result_v)  # found from DB, add to cache first before return
+                return {'key': result_k, 'value': result_v}, 200
+            else:
+                return abort(404, message="element with Key {} doesn't exist".format(key))
+                # return 'Key Not Exist', 404
 
     def delete(self, key):
+        # update both cache and db
+        cache.delete(key)
         db.remove_kvpair(key=key)
         return "Delete Done", 200
 
@@ -52,6 +65,8 @@ class PostPutHandler(Resource):
 
         if self._key_exist(key):
             # can do DB update, return 200 after db update done
+            # update both cache and db
+            cache.set(key, value)
             db.update_kvpair(key, value)
             return "Update {} Success".format((key, value)), 200
         else:
@@ -66,6 +81,8 @@ class PostPutHandler(Resource):
             return abort(400, message="primary key already exist, cannot insert")
         else:
             # can do DB insert, return 201 created after db insert done
+            # update both cache and db
+            cache.set(key, value)
             kvpair = KvPair(key, value)
             db.save_kvpair(kvpair)
             return "Insert {} Success".format((key, value)), 201
@@ -77,8 +94,11 @@ class PostPutHandler(Resource):
         return key, value
 
     def _key_exist(self, key):
-        result = db.get_kvpair(key=key)
-        return True if result else False
+        # search both cache and DB
+        if cache.get(key) or db.get_kvpair(key=key):
+            return True
+        else:
+            return False
 
 
 # add handler to api

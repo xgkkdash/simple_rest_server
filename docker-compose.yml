@@ -1,0 +1,13 @@
+version: '2'
+services:
+    web:
+        build: .
+        container_name: "web"
+        depends_on:
+            - db
+        command: ["./start_mongo.sh", "db", "--", "python", "main.py"]
+    db:
+        image: mongo
+        container_name: "mongodb"
+        ports:
+            - 27017:27017

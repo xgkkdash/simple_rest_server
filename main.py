@@ -23,8 +23,8 @@ parser = reqparse.RequestParser()
 parser.add_argument('key')
 parser.add_argument('value')
 
-# match CRUD operations with get/post/put/delete request, rules:
-# get -- read, put -- create, post -- update, delete -- delete
+# match CRUD operations with get/post/put/delete request, according to standard rules:
+# post -- create, get -- read, put -- update, delete -- delete
 
 
 class GetDelHandler(Resource):
@@ -45,10 +45,10 @@ class GetDelHandler(Resource):
 
 class PostPutHandler(Resource):
     # first check if args are valid, else return 400 Bad Request
-    def post(self):
+    def put(self):
         key, value = self._params_from_request()
         if not key or not value:
-            return abort(400, message="POST request must contains both key and value")
+            return abort(400, message="PUT request must contains both key and value")
 
         if self._key_exist(key):
             # can do DB update, return 200 after db update done
@@ -57,10 +57,10 @@ class PostPutHandler(Resource):
         else:
             return abort(400, message="primary key does not exist, cannot update")
 
-    def put(self):
+    def post(self):
         key, value = self._params_from_request()
         if not key or not value:
-            return abort(400, message="PUT request must contains both key and value")
+            return abort(400, message="POST request must contains both key and value")
 
         if self._key_exist(key):
             return abort(400, message="primary key already exist, cannot insert")

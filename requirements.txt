@@ -1,2 +1,4 @@
+decorator
 flask
 flask-restful
+mongoengine

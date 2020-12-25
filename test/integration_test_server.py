@@ -28,6 +28,7 @@ def test_create_read_delete():
 
 
 def test_crud_whole_flow():
+    # operation failed due to empty db
     r = requests.get(base_url + '/ab')
     assert r.status_code == 404
 
@@ -37,6 +38,7 @@ def test_crud_whole_flow():
     r = requests.post(base_url, {"key": "ab"})
     assert r.status_code == 400
 
+    # create - get - update - get - delete - get
     r = requests.post(base_url, {"key": "ab", "value": "cd"})
     assert r.status_code == 201
 

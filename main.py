@@ -12,11 +12,13 @@ app = Flask(__name__)
 api = Api(app)
 
 # redis cache
-cache = redis.Redis(host='0.0.0.0', port=6379)
+REDIS_HOST = os.environ.get('REDIS_HOST', '127.0.0.1')
+cache = redis.Redis(host=REDIS_HOST, port=6379)
 
-# TODO: set db_name and url here, later change it to docker_file
+# TODO: set db_name const here, later change it to docker_file
 db_name = "test_rest_server"
-db_url = "mongodb://localhost:27017/"
+DB_HOST = os.environ.get('DB_HOST', 'localhost')
+db_url = "mongodb://" + DB_HOST + ":27017/"
 
 # init db
 with app.app_context():

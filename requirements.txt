@@ -5,3 +5,4 @@ mongoengine
 redis
 pytest
 requests
+flask_httpauth

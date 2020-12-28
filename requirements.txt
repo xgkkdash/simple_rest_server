@@ -6,3 +6,5 @@ redis
 pytest
 requests
 flask_httpauth
+pyjwt
+pyopenssl
